@@ -1,0 +1,7 @@
+{
+  "eslint.nodePath": "src",
+  "eslint.workingDirectories": [
+    "src"
+  ],
+  "eslint.autoFixOnSave": true
+}
