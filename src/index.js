@@ -2,10 +2,13 @@ import express from 'express';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import cron from 'node-cron';
 
 import logger from './utils/logger';
 import routes from './routes';
 import config from './config';
+
+import variationAlarm from './coinone/variationAlarm';
 
 const app = express();
 
@@ -34,7 +37,15 @@ app.use((err, req, res, next) => {
 
 app.use('/', routes);
 
+cron.schedule('0 5 * * * *', variationAlarm('btc', 2.5));
+cron.schedule('0 5 * * * *', variationAlarm('bch', 2.5));
+cron.schedule('0 5 * * * *', variationAlarm('eth', 2.5));
+cron.schedule('0 5 * * * *', variationAlarm('etc', 2.5));
+cron.schedule('0 5 * * * *', variationAlarm('xrp', 2.5));
+cron.schedule('0 5 * * * *', variationAlarm('qtum', 2.5));
+
 app.listen(app.get('port'), () => {
   logger.info('Server log level is', logger.logLevel);
   logger.info(`Express server listening on port ${app.get('port')}`);
 });
+

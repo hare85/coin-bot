@@ -17,6 +17,7 @@ const logger = new (winston.Logger)({
       level: logLevel,
       handleExceptions: true,
       colorize: true,
+      prettyPrint: true,
     }),
   ],
   exitOnError: false,
