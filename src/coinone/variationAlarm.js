@@ -4,7 +4,7 @@ import CoinoneErrCodeMap from '../common/coinoneErrCode';
 import { publicApi, lineApi, getData } from '../service';
 import logger from '../utils/logger';
 
-const lineNoti = lineApi().notify;
+const lineNoti = () => {};
 
 const allowedCurrency = ['btc', 'bch', 'eth', 'etc', 'xrp', 'qtum'];
 const allowedPeriod = ['hour', 'day'];
@@ -41,7 +41,7 @@ async function getTrades(currency = 'btc', period = 'hour') {
   return data;
 }
 
-function print(v, st, order, currency, variation) {
+function print(v, sq, st, order, currency, variation) {
   const timeInterval = order.timestamp - st;
   const hours = Math.floor(timeInterval / 60 / 60);
   const mins = Math.floor((timeInterval - (hours * 60 * 60)) / 60);
@@ -70,16 +70,18 @@ function print(v, st, order, currency, variation) {
     logger.debug(message);
     lineNoti(message);
   }
+
+  console.log(sq);
 }
 
-async function variationAlarm(currency = 'xrp', variation = 2.5, timeRange = 300) {
+async function variationAlarm(currency = 'xrp', variation = 2.5, timeRange = 60) {
   const trades = await getTrades(currency);
   if (trades === null) return;
 
   let completeOrders = trades.completeOrders;
 
   completeOrders = completeOrders.map((completeOrder, i) => {
-    const { timestamp, price } = completeOrder;
+    const { timestamp, price, qty } = completeOrder;
 
     let v = 0;
     if (i !== 0) {
@@ -91,24 +93,26 @@ async function variationAlarm(currency = 'xrp', variation = 2.5, timeRange = 300
       timestamp,
       price,
       variation: v,
+      qty: parseFloat(qty),
     };
   });
 
   completeOrders = R.filter(v => v.timestamp > LastTimeMap[currency])(completeOrders);
 
   let variationSum;
-  const isUp = true;
+  let qtySum;
   let startTimestamp = completeOrders[0].timestamp;
 
   R.forEach((completeOrder) => {
     if ((completeOrder.timestamp - startTimestamp) > timeRange) {
-      print(variationSum, startTimestamp, completeOrder, currency, variation);
+      print(variationSum, qtySum, startTimestamp, completeOrder, currency, variation);
       variationSum = 0;
+      qtySum = 0;
       startTimestamp = completeOrder.timestamp;
     }
 
     variationSum += completeOrder.variation;
-
+    qtySum += completeOrder.qty;
 
     // if (completeOrder.variation < 0) {
     //   if (isUp === true) {
