@@ -4,7 +4,7 @@ import CoinoneErrCodeMap from '../common/coinoneErrCode';
 import { publicApi, lineApi, getData } from '../service';
 import logger from '../utils/logger';
 
-const lineNoti = () => {};
+const lineNoti = lineApi().notify;
 
 const allowedCurrency = ['btc', 'bch', 'eth', 'etc', 'xrp', 'qtum'];
 const allowedPeriod = ['hour', 'day'];
