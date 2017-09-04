@@ -8,6 +8,15 @@ const lineNoti = lineApi().notify;
 
 const allowedCurrency = ['btc', 'bch', 'eth', 'etc', 'xrp', 'qtum'];
 const allowedPeriod = ['hour', 'day'];
+const LastTimeMap = {
+  btc: 0,
+  bch: 0,
+  eth: 0,
+  etc: 0,
+  xrp: 0,
+  qtum: 0,
+};
+
 async function getTrades(currency = 'btc', period = 'hour') {
   if (!R.contains(currency, allowedCurrency)) {
     logger.error(`getChart - Not allowed currency: currency: ${currency}`);
@@ -32,7 +41,38 @@ async function getTrades(currency = 'btc', period = 'hour') {
   return data;
 }
 
-async function variationAlarm(currency = 'xrp', variation = 2.5) {
+function print(v, st, order, currency, variation) {
+  const timeInterval = order.timestamp - st;
+  const hours = Math.floor(timeInterval / 60 / 60);
+  const mins = Math.floor((timeInterval - (hours * 60 * 60)) / 60);
+  const seconds = Math.floor((timeInterval - (hours * 60 * 60)) - (mins * 60));
+  const startDate = dateFormat(new Date(st * 1000), 'yy-mm-dd HH:MM:ss');
+  const endDate = dateFormat(new Date(order.timestamp * 1000), 'yy-mm-dd HH:MM:ss');
+  let message = '';
+  if (v < 0) {
+    if (v < -variation) {
+      message = `
+      --- ${currency} ---
+      ${startDate} 부터
+      ${endDate},
+      ${hours % 24}:${mins}:${seconds} 간
+      ${v.toFixed(3)} 감소`;
+      logger.debug(message);
+      // lineNoti(message);
+    }
+  } else if (v > variation) {
+    message = `
+    --- ${currency} ---
+    ${startDate} 부터
+    ${endDate},
+    ${hours % 24}:${mins}:${seconds} 간
+    ${v.toFixed(3)} 증가`;
+    logger.debug(message);
+    // lineNoti(message);
+  }
+}
+
+async function variationAlarm(currency = 'xrp', variation = 2.5, timeRange = 300) {
   const trades = await getTrades(currency);
   if (trades === null) return;
 
@@ -54,59 +94,45 @@ async function variationAlarm(currency = 'xrp', variation = 2.5) {
     };
   });
 
-  completeOrders = R.filter(v => v.variation !== 0)(completeOrders);
+  completeOrders = R.filter(v => v.timestamp > LastTimeMap[currency])(completeOrders);
 
   let variationSum;
-  let isUp = true;
-  let startTimestamp = 0;
-
-  function print(v, st, order) {
-    const timeInterval = order.timestamp - st;
-    const hours = Math.floor(timeInterval / 60 / 60);
-    const mins = Math.floor((timeInterval - (hours * 60 * 60)) / 60);
-    const seconds = Math.floor((timeInterval - (hours * 60 * 60)) - (mins * 60));
-    const startDate = dateFormat(new Date(st * 1000), 'yy-mm-dd HH:MM:ss');
-    const endDate = dateFormat(new Date(order.timestamp * 1000), 'yy-mm-dd HH:MM:ss');
-    let message = '';
-    if (v < 0) {
-      if (v < -variation) {
-        message = `
-        --- ${currency} ---
-        ${startDate} 부터
-        ${endDate},
-        ${hours % 24}:${mins}:${seconds} 간
-        ${v.toFixed(3)} 감소`;
-        logger.debug(message);
-        lineNoti(message);
-      }
-    } else if (v > variation) {
-      message = `
-      --- ${currency} ---
-      ${startDate} 부터
-      ${endDate},
-      ${hours % 24}:${mins}:${seconds} 간
-      ${v.toFixed(3)} 증가`;
-      logger.debug(message);
-      lineNoti(message);
-    }
-  }
+  const isUp = true;
+  let startTimestamp = completeOrders[0].timestamp;
 
   R.forEach((completeOrder) => {
-    if (completeOrder.variation < 0) {
-      if (isUp === true) {
-        print(variationSum, startTimestamp, completeOrder);
-        startTimestamp = completeOrder.timestamp;
-        variationSum = 0;
-        isUp = false;
-      }
-    } else if (isUp === false) {
-      print(variationSum, startTimestamp, completeOrder);
-      startTimestamp = completeOrder.timestamp;
+    if ((completeOrder.timestamp - startTimestamp) > timeRange) {
+      print(variationSum, startTimestamp, completeOrder, currency, variation);
       variationSum = 0;
-      isUp = true;
+      startTimestamp = completeOrder.timestamp;
     }
+
     variationSum += completeOrder.variation;
+
+
+    // if (completeOrder.variation < 0) {
+    //   if (isUp === true) {
+    //     print(variationSum, startTimestamp, completeOrder, currency, variation);
+    //     startTimestamp = completeOrder.timestamp;
+    //     variationSum = 0;
+    //     isUp = false;
+    //   }
+    //   if (variationSum >= variation) {
+    //     print(variationSum, startTimestamp, completeOrder, currency, variation);
+    //   }
+    // } else if (isUp === false) {
+    //   print(variationSum, startTimestamp, completeOrder, currency, variation);
+    //   startTimestamp = completeOrder.timestamp;
+    //   variationSum = 0;
+    //   isUp = true;
+    // }
+    // logger.debug(variationSum, completeOrder.variation);
+    // variationSum += completeOrder.variation;
+    // if (isUp === false && variationSum <= -variation) {
+    //   print(variationSum, startTimestamp, completeOrder, currency, variation);
+    // }
   }, completeOrders);
+  LastTimeMap[currency] = startTimestamp;
 }
 
 export default variationAlarm;

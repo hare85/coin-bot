@@ -37,12 +37,11 @@ app.use((err, req, res, next) => {
 
 app.use('/', routes);
 
-cron.schedule('0 5 * * * *', variationAlarm('btc', 2.5));
-cron.schedule('0 5 * * * *', variationAlarm('bch', 2.5));
-cron.schedule('0 5 * * * *', variationAlarm('eth', 2.5));
-cron.schedule('0 5 * * * *', variationAlarm('etc', 2.5));
-cron.schedule('0 5 * * * *', variationAlarm('xrp', 2.5));
-cron.schedule('0 5 * * * *', variationAlarm('qtum', 2.5));
+cron.schedule('0 */2 * * * *', () => variationAlarm('btc', 2.5));
+cron.schedule('0 */2 * * * *', () => variationAlarm('eth', 2.5));
+cron.schedule('0 */2 * * * *', () => variationAlarm('etc', 2.5));
+cron.schedule('0 */2 * * * *', () => variationAlarm('xrp', 2.5));
+cron.schedule('0 */2 * * * *', () => variationAlarm('qtum', 2.5));
 
 app.listen(app.get('port'), () => {
   logger.info('Server log level is', logger.logLevel);
