@@ -58,7 +58,7 @@ function print(v, st, order, currency, variation) {
       ${hours % 24}:${mins}:${seconds} 간
       ${v.toFixed(3)} 감소`;
       logger.debug(message);
-      // lineNoti(message);
+      lineNoti(message);
     }
   } else if (v > variation) {
     message = `
@@ -68,7 +68,7 @@ function print(v, st, order, currency, variation) {
     ${hours % 24}:${mins}:${seconds} 간
     ${v.toFixed(3)} 증가`;
     logger.debug(message);
-    // lineNoti(message);
+    lineNoti(message);
   }
 }
 
