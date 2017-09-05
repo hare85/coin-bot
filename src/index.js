@@ -36,6 +36,7 @@ app.use((err, req, res, next) => {
 });
 
 app.use('/', routes);
+
 cron.schedule('0 */2 * * * *', () => variationAlarm('btc', 1.5));
 cron.schedule('0 */2 * * * *', () => variationAlarm('eth', 1.5));
 cron.schedule('0 */2 * * * *', () => variationAlarm('etc', 1.5));

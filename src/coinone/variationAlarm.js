@@ -41,7 +41,7 @@ async function getTrades(currency = 'btc', period = 'hour') {
   return data;
 }
 
-function print(v, sq, st, order, currency, variation) {
+function print(v, sq, st, sp, order, currency, variation) {
   const timeInterval = order.timestamp - st;
   const hours = Math.floor(timeInterval / 60 / 60);
   const mins = Math.floor((timeInterval - (hours * 60 * 60)) / 60);
@@ -56,7 +56,8 @@ function print(v, sq, st, order, currency, variation) {
       ${startDate} 부터
       ${endDate},
       ${hours % 24}:${mins}:${seconds} 간
-      ${v.toFixed(3)} 감소`;
+      ${v.toFixed(3)} 감소
+      ${sp} => ${order.price}`;
       logger.debug(message);
       lineNoti(message);
     }
@@ -66,7 +67,8 @@ function print(v, sq, st, order, currency, variation) {
     ${startDate} 부터
     ${endDate},
     ${hours % 24}:${mins}:${seconds} 간
-    ${v.toFixed(3)} 증가`;
+    ${v.toFixed(3)} 증가
+    ${sp} => ${order.price}`;
     logger.debug(message);
     lineNoti(message);
   }
@@ -102,13 +104,15 @@ async function variationAlarm(currency = 'xrp', variation = 2.5, timeRange = 60)
   let variationSum;
   let qtySum;
   let startTimestamp = completeOrders[0].timestamp;
+  let startPrice = completeOrders[0].price;
 
   R.forEach((completeOrder) => {
     if ((completeOrder.timestamp - startTimestamp) > timeRange) {
-      print(variationSum, qtySum, startTimestamp, completeOrder, currency, variation);
+      print(variationSum, qtySum, startTimestamp, startPrice, completeOrder, currency, variation);
       variationSum = 0;
       qtySum = 0;
       startTimestamp = completeOrder.timestamp;
+      startPrice = completeOrder.price;
     }
 
     variationSum += completeOrder.variation;
